@@ -47,6 +47,7 @@ default_origins = [
     "http://localhost:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3000",
+    "https://ai-vet-frontend-248106009661.asia-northeast1.run.app",
 ]
 env_origins = os.getenv("CORS_ALLOW_ORIGINS")
 origins = [o.strip() for o in env_origins.split(",") if o.strip()] if env_origins else default_origins
