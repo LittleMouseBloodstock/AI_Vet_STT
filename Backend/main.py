@@ -132,15 +132,20 @@ if DEBUG_ENDPOINTS:
 async def on_startup():
     global google_audio_service, google_ai_service
     # Only initialize AI services when an API key is present
+    print(f"[startup] Checking API Key: {bool(get_gemini_api_key())}")
     if get_gemini_api_key():
         try:
+            print("[startup] Initializing GoogleAudioService...")
             google_audio_service = GoogleAudioService()
+            print("[startup] Initializing GoogleAIService...")
             google_ai_service = GoogleAIService(audio_service=google_audio_service)
-            print("Google Audio / AI services initialized")
+            print("[startup] Google Audio / AI services initialized SUCCESS")
         except Exception as e:
             google_audio_service = None
             google_ai_service = None
-            print(f"[startup] Google services not initialized: {e}")
+            print(f"[startup] Google services not initialized (ERROR): {e}")
+            import traceback
+            traceback.print_exc()
     else:
         print("[startup] Gemini API key not set; AI services disabled")
 
