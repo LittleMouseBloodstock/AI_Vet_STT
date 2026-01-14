@@ -228,7 +228,7 @@ async def transcribe_audio(audio: UploadFile = File(...), lang: str = Form(None)
         "service": "google_speech_to_text",
     }
 
-@app.post("/api/generateSoap")
+@app.post("/api/generateSoapFromText")
 async def generate_soap_endpoint(audio: UploadFile = File(None), transcribed_text: str = Form(None), lang: str = Form(None), target_lang: str = Form(None)):
     if google_ai_service is None:
         raise HTTPException(status_code=500, detail="AIサービスが初期化されていません")
