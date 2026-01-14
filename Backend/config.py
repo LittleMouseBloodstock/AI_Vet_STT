@@ -7,6 +7,10 @@ from typing import Optional
 # Load .env once at import
 load_dotenv()
 
+# Global config variables
+SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
+LOCAL_DEV = os.getenv("LOCAL_DEV", "false").lower() == "true"
+STRICT_SHEETS_WRITE = os.getenv("STRICT_SHEETS_WRITE", "false").lower() == "true"
 
 def write_service_account_file_if_needed() -> None:
     """Create service_account.json from GOOGLE_SERVICE_ACCOUNT_B64 if present.
