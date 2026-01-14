@@ -22,6 +22,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code
 COPY . .
 
+# Create uploads directory
+RUN mkdir -p uploads
+
 # Cloud Run expects the container to listen on PORT (default 8080)
 # Uvicorn will listen on 0.0.0.0:8080
 CMD exec uvicorn main:app --host 0.0.0.0 --port 8080
