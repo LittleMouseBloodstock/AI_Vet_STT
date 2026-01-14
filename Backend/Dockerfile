@@ -1,6 +1,10 @@
 # Use official Python runtime as a parent image
 FROM python:3.11-slim
 
+# Prevent Python from writing pyc files to disc and buffer stdout/stderr
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
 # Install system dependencies (ffmpeg for pydub)
 RUN apt-get update && apt-get install -y \
     ffmpeg \
