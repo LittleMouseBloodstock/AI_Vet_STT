@@ -3,6 +3,7 @@ from schemas import Animal, Record, SoapNotes
 import threading
 import os
 import base64
+import google.auth
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from fastapi import HTTPException
@@ -22,27 +23,39 @@ def _get_gcp_credentials():
     Priority:
     1) GOOGLE_SERVICE_ACCOUNT_B64 (base64-encoded JSON)
     2) GOOGLE_APPLICATION_CREDENTIALS or local 'service_account.json' file
+    3) Application Default Credentials (ADC) - for Cloud Run
     """
+    # 1. Base64 Env
     b64_str = os.getenv("GOOGLE_SERVICE_ACCOUNT_B64")
     if b64_str:
-        data = base64.b64decode(b64_str)
-        info = json.loads(data.decode("utf-8"))
-        creds = Credentials.from_service_account_info(
-            info,
-            scopes=["https://www.googleapis.com/auth/spreadsheets"],
-        )
-        return creds
+        try:
+            data = base64.b64decode(b64_str)
+            info = json.loads(data.decode("utf-8"))
+            return Credentials.from_service_account_info(
+                info,
+                scopes=["https://www.googleapis.com/auth/spreadsheets"],
+            )
+        except Exception as e:
+            print(f"Failed to load credentials from GOOGLE_SERVICE_ACCOUNT_B64: {e}")
 
-    # Fallback to file path
+    # 2. File Path
     cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or "service_account.json"
     if os.path.exists(cred_path):
-        creds = Credentials.from_service_account_file(
+        return Credentials.from_service_account_file(
             cred_path,
             scopes=["https://www.googleapis.com/auth/spreadsheets"],
         )
-        return creds
 
-    raise RuntimeError("No Google service account credentials found. Set GOOGLE_SERVICE_ACCOUNT_B64 or provide service_account.json")
+    # 3. Application Default Credentials (ADC)
+    try:
+        creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/spreadsheets"])
+        print("Using Application Default Credentials (ADC)")
+        return creds
+    except Exception as e:
+        print(f"Failed to load ADC: {e}")
+
+    raise RuntimeError("No Google service account credentials found. (Checked B64 env, service_account.json, and ADC)")
+
 
 
 def _get_sheets_service():
