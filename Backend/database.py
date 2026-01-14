@@ -16,6 +16,7 @@ STRICT_SHEETS_WRITE = (os.getenv("STRICT_SHEETS_WRITE", "0") == "1")
 # Allow overriding sheet tab names via env
 ANIMALS_TAB = os.getenv("SHEETS_TAB_ANIMALS", "animals")
 RECORDS_TAB = os.getenv("SHEETS_TAB_RECORDS", "records")
+print("DEBUG: database.py loaded - Version check 2026-01-14")
 
 
 def _get_gcp_credentials():
