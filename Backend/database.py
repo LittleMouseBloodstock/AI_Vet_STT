@@ -10,7 +10,8 @@ import json
 
 _lock = threading.Lock()
 DEV_MODE = (os.getenv("LOCAL_DEV", "0") == "1")
-# Sheets 譖ｸ縺崎ｾｼ縺ｿ螟ｱ謨玲凾縺ｮ謇ｱ縺・ｼ域里螳・ 蜴ｳ譬ｼ縺ｧ縺ｪ縺・= 繝｡繝｢繝ｪ菫晏ｭ倥ｒ邯ｭ謖・ｼ・STRICT_SHEETS_WRITE = (os.getenv("STRICT_SHEETS_WRITE", "0") == "1")
+# Sheets 書き込み失敗時の扱い（厳密 = 500エラー / 緩やか = メモリ保存を継続）
+STRICT_SHEETS_WRITE = (os.getenv("STRICT_SHEETS_WRITE", "0") == "1")
 # Allow overriding sheet tab names via env
 ANIMALS_TAB = os.getenv("SHEETS_TAB_ANIMALS", "animals")
 RECORDS_TAB = os.getenv("SHEETS_TAB_RECORDS", "records")
