@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'Frontend/**'
+      - '.github/workflows/deploy-frontend.yaml'
+  workflow_dispatch:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
