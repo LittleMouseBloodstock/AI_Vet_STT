@@ -1,0 +1,46 @@
+name: Deploy Frontend to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Frontend/**'
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  SERVICE_NAME: ai-vet-frontend
+  REGION: asia-northeast1
+  # Backend URL should ideally be dynamic or stored in secrets if sensitive, 
+  # but for now we hardcode the known URL or use a secret if provided.
+  # Assuming the user might want to set this via secret or we use the standard format.
+  # For safety, we'll try to use a secret, but fallback to manual entry requirement instruction if needed.
+  # We will use a secret for cleaner config: API_BASE_URL
+  API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Deploy to Cloud Run
+        uses: 'google-github-actions/deploy-cloudrun@v2'
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          source: ./Frontend
+          env_vars: |
+            NEXT_PUBLIC_API_URL=${{ env.API_URL }}

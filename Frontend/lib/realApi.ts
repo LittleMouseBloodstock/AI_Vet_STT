@@ -1,8 +1,8 @@
-import type { 
-  Animal, 
-  Record, 
-  AnimalDetailData, 
-  UploadResponse, 
+import type {
+  Animal,
+  Record,
+  AnimalDetailData,
+  UploadResponse,
   TranscribeResponse,
   SoapGenerationResponse,
   RecordCreationResponse,
@@ -29,22 +29,15 @@ export class ApiClientError extends Error {
     super(message);
     this.name = 'ApiClientError';
   }
-  // 翻訳 API
-  async translateText(text: string, target_lang: string = 'en'): Promise<{ translated: string; target_lang: string; service: string | null; }> {
-    const formData = new FormData();
-    formData.append('text', text);
-    formData.append('target_lang', target_lang);
-    return this.request(`/api/translate`, { method: 'POST', body: formData });
-  }
 }
 
 class ApiClient {
   private async request<T>(
-    endpoint: string, 
+    endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
-    
+
     try {
       const response = await fetch(url, {
         headers: {
@@ -56,14 +49,14 @@ class ApiClient {
       if (!response.ok) {
         let errorMessage = `API Error: ${response.status}`;
         let errorDetail = '';
-        
+
         try {
           const errorData = await response.json() as ApiError;
           errorDetail = errorData.detail || await response.text();
         } catch {
           errorDetail = await response.text();
         }
-        
+
         throw new ApiClientError(
           `${errorMessage} - ${errorDetail}`,
           response.status
@@ -88,11 +81,11 @@ class ApiClient {
 
   // 動物関連のAPI
   async searchAnimals(
-    query: string = "", 
+    query: string = "",
     filters?: SearchFilters
   ): Promise<Animal[]> {
     const params = new URLSearchParams();
-    
+
     if (query) params.append("query", query);
     if (filters?.microchip_number) params.append("microchip_number", filters.microchip_number);
     if (filters?.farm_id) params.append("farm_id", filters.farm_id);
@@ -100,10 +93,10 @@ class ApiClient {
     if (filters?.sex) params.append("sex", filters.sex);
     if (filters?.date_from) params.append("date_from", filters.date_from);
     if (filters?.date_to) params.append("date_to", filters.date_to);
-    
+
     const queryString = params.toString();
     const endpoint = `/api/animals${queryString ? `?${queryString}` : ""}`;
-    
+
     return this.request<Animal[]>(endpoint);
   }
 
@@ -139,7 +132,7 @@ class ApiClient {
 
   async updateAnimal(animalId: string, animalData: Partial<NewAnimalFormData>): Promise<Animal> {
     const formData = new FormData();
-    
+
     Object.entries(animalData).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         if (key === 'thumbnail' && value instanceof File) {
@@ -187,14 +180,16 @@ class ApiClient {
 
   // SOAP生成（音声から）
   async generateSoapFromAudio(
-    audioFile: File, 
+    audioFile: File,
     transcribedText?: string
   ): Promise<SoapGenerationResponse> {
     const formData = new FormData();
     formData.append("audio", audioFile);
-    
+
     if (transcribedText) {
       formData.append("transcribed_text", transcribedText);
+      // Backendのバージョン差異吸収のため、両方のキーで送る
+      formData.append("text", transcribedText);
     }
 
     return this.request<SoapGenerationResponse>("/api/generateSoap", {
@@ -207,6 +202,8 @@ class ApiClient {
   async generateSoapFromText(text: string): Promise<SoapGenerationResponse> {
     const formData = new FormData();
     formData.append("text", text);
+    // Backendのバージョン差異吸収のため、両方のキーで送る
+    formData.append("transcribed_text", text);
 
     return this.request<SoapGenerationResponse>("/api/generateSoapFromText", {
       method: "POST",
@@ -222,19 +219,19 @@ class ApiClient {
     text?: string;
   }): Promise<SoapGenerationResponse> {
     const formData = new FormData();
-    
+
     if (data.audio) {
       formData.append("audio", data.audio);
     }
-    
+
     if (data.transcript) {
       formData.append("transcript", data.transcript);
     }
-    
+
     if (data.text) {
       formData.append("text", data.text);
     }
-    
+
     if (data.images) {
       data.images.forEach((file) => {
         formData.append("images", file);
@@ -260,24 +257,24 @@ class ApiClient {
     medication_history?: string[];
   }): Promise<RecordCreationResponse> {
     const formData = new FormData();
-    
+
     formData.append("animalId", recordData.animalId);
     formData.append("soap_json", JSON.stringify(recordData.soap));
-    
+
     if (recordData.audio) {
       formData.append("audio", recordData.audio);
     }
-    
+
     if (recordData.images && recordData.images.length > 0) {
       recordData.images.forEach((image) => {
         formData.append("images", image);
       });
     }
-    
+
     if (recordData.autoTranscribe !== undefined) {
       formData.append("auto_transcribe", recordData.autoTranscribe.toString());
     }
-    
+
     if (recordData.next_visit_date) {
       formData.append("next_visit_date", recordData.next_visit_date);
     }
@@ -287,7 +284,7 @@ class ApiClient {
     if (recordData.doctor) {
       formData.append("doctor", recordData.doctor);
     }
-    
+
     if (recordData.medication_history) {
       formData.append("medication_history", JSON.stringify(recordData.medication_history));
     }
@@ -309,25 +306,25 @@ class ApiClient {
 
   // 診療記録更新
   async updateRecord(
-    recordId: string, 
+    recordId: string,
     updatedRecord: Partial<NewRecordFormData>
   ): Promise<Record> {
     const formData = new FormData();
-    
+
     if (updatedRecord.soap) {
       formData.append("soap_json", JSON.stringify(updatedRecord.soap));
     }
-    
+
     if (updatedRecord.images && updatedRecord.images.length > 0) {
       updatedRecord.images.forEach((image) => {
         formData.append("images", image);
       });
     }
-    
+
     if (updatedRecord.audio) {
       formData.append("audio", updatedRecord.audio);
     }
-    
+
     if (updatedRecord.next_visit_date) {
       formData.append("next_visit_date", updatedRecord.next_visit_date);
     }
@@ -395,6 +392,14 @@ class ApiClient {
     const params = timeRange ? `?range=${encodeURIComponent(timeRange)}` : "";
     return this.request<any>(`/api/statistics${params}`);
   }
+
+  // 翻訳 API
+  async translateText(text: string, target_lang: string = 'en'): Promise<{ translated: string; target_lang: string; service: string | null; }> {
+    const formData = new FormData();
+    formData.append('text', text);
+    formData.append('target_lang', target_lang);
+    return this.request(`/api/translate`, { method: 'POST', body: formData });
+  }
 }
 
 // シングルトンインスタンス
@@ -404,11 +409,11 @@ export const api = new ApiClient();
 export const searchAnimals = (query: string) => api.searchAnimals(query);
 export const fetchAnimalDetail = (animalId: string) => api.fetchAnimalDetail(animalId);
 export const createAnimal = (animalData: NewAnimalFormData) => api.createAnimal(animalData);
-export const createRecord = (recordData: { animalId: string; soap: SoapNotes }) => 
+export const createRecord = (recordData: { animalId: string; soap: SoapNotes }) =>
   api.createRecord(recordData);
-export const updateRecord = (recordId: string, recordData: Partial<NewRecordFormData>) => 
+export const updateRecord = (recordId: string, recordData: Partial<NewRecordFormData>) =>
   api.updateRecord(recordId, recordData);
-export const generateSoapFromInput = (data: { audio?: File; images?: File[]; transcript?: string }) => 
+export const generateSoapFromInput = (data: { audio?: File; images?: File[]; transcript?: string }) =>
   api.generateSoapFromInput(data);
 
 // 名前付きエクスポート

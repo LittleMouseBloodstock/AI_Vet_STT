@@ -234,20 +234,34 @@ async def transcribe_audio(audio: UploadFile = File(...), lang: str = Form(None)
     }
 
 @app.post("/api/generateSoapFromText")
-async def generate_soap_endpoint(audio: UploadFile = File(None), transcribed_text: str = Form(None), lang: str = Form(None), target_lang: str = Form(None)):
+async def generate_soap_endpoint(
+    audio: UploadFile = File(None), 
+    transcribed_text: str = Form(None), 
+    text: str = Form(None), 
+    lang: str = Form(None), 
+    target_lang: str = Form(None)
+):
+    print(f"[debug] generateSoap called. audio={audio}, text_len={len(transcribed_text or text or '')}, filename={audio.filename if audio else 'None'}")
+    
     if google_ai_service is None:
         raise HTTPException(status_code=500, detail="AIサービスが初期化されていません")
-    text = transcribed_text
-    if not text and audio is not None:
+    
+    # Check both parameter names
+    input_text = transcribed_text or text
+    
+    if not input_text and audio is not None:
         if google_audio_service is None:
             raise HTTPException(status_code=500, detail="音声サービスが初期化されていません")
         data = await audio.read()
         if len(data) > 25 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="ファイルサイズは25MB以下にしてください")
-        text = google_audio_service.transcribe_audio_data(data, audio.filename, language_code=lang)
-    if not text:
+        input_text = google_audio_service.transcribe_audio_data(data, audio.filename, language_code=lang)
+        
+    if not input_text:
         raise HTTPException(status_code=400, detail="テキストが指定されていません")
-    soap_notes = google_ai_service.generate_soap_from_text(text)
+        
+    soap_notes = google_ai_service.generate_soap_from_text(input_text)
+    
     # 生成後に出力言語を揃えたい場合は、target_lang を指定して翻訳
     if target_lang:
         try:
@@ -259,119 +273,10 @@ async def generate_soap_endpoint(audio: UploadFile = File(None), transcribed_tex
             soap_notes = _SN(s=s, o=o, a=a, p=p)
         except Exception:
             pass
+            
     return {
         "soap_notes": soap_notes.model_dump(),
-        "original_text": text,
-        "status": "success",
-        "service": "google_gemini",
-    }
-
-@app.post("/api/records")
-async def create_record(
-    animalId: str = Form(...),
-    soap_json: str = Form(None),
-    audio: UploadFile = File(None),
-    images: List[UploadFile] = File(None),
-    auto_transcribe: bool = Form(False),
-    lang: str = Form(None),
-    soap_s: str = Form(""),
-    soap_o: str = Form(""),
-    soap_a: str = Form(""),
-    soap_p: str = Form(""),
-    next_visit_date: str = Form(None),
-    next_visit_time: str = Form(None),
-    doctor: str = Form(None),
-    medications_json: str = Form(None),
-    nosai_points: int = Form(None),
-    external_case_id: str = Form(None),
-    external_ref_url: str = Form(None),
-):
-    animal = DB.get_animal(animalId)
-    if not animal:
-        raise HTTPException(status_code=404, detail="動物が見つかりません")
-    soap: Optional[SoapNotes] = None
-    if soap_json:
-        try:
-            soap_dict = _json.loads(soap_json)
-            soap = SoapNotes(**soap_dict)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"soap_json が不正です: {e}")
-    elif any([soap_s, soap_o, soap_a, soap_p]):
-        soap = SoapNotes(s=soap_s, o=soap_o, a=soap_a, p=soap_p)
-    else:
-        soap = SoapNotes()
-    image_urls: List[str] = []
-    if images:
-        for img in images:
-            if img and img.filename:
-                content = await img.read()
-                url, _ = save_file(content, filename=f"rec_{uuid.uuid4().hex}_{img.filename}")
-                image_urls.append(url)
-    audio_url = None
-    transcribed = None
-    if audio is not None:
-        data = await audio.read()
-        if len(data) > 25 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="ファイルサイズは25MB以下にしてください")
-        audio_url, _ = save_file(data, filename=f"audio_{uuid.uuid4().hex}_{audio.filename}")
-        if auto_transcribe and google_audio_service is not None and not soap:
-            transcribed = google_audio_service.transcribe_audio_data(data, audio.filename, language_code=lang)
-            if transcribed:
-                soap = google_ai_service.generate_soap_from_text(transcribed)
-    record = Record(
-        id=uuid.uuid4().hex,
-        animalId=animalId,
-        soap=soap,
-        images=image_urls,
-        audioUrl=audio_url,
-    )
-    if next_visit_date:
-        record.next_visit_date = next_visit_date
-    if next_visit_time:
-        record.next_visit_time = next_visit_time
-    if doctor:
-        record.doctor = doctor
-    # medications
-    if medications_json:
-        try:
-            meds = _json.loads(medications_json)
-            # 型: List[dict] -> MedicationEntry に変換
-            record.medications = [Record.MedicationEntry(**m) for m in meds]
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"medications_json が不正です: {e}")
-    if nosai_points is not None:
-        try:
-            record.nosai_points = int(nosai_points)
-        except Exception:
-            raise HTTPException(status_code=400, detail="nosai_points は整数で指定してください")
-    if external_case_id:
-        record.external_case_id = external_case_id
-    if external_ref_url:
-        record.external_ref_url = external_ref_url
-    DB.add_record(record)
-    return {
-        "record": record,
-        "transcribed_text": transcribed,
-        "auto_transcribe": auto_transcribe,
-        "processed_images": [],
-        "record_id": record.id,
-        "message": "記録が正常に保存されました",
-        "status": "success",
-        "api_used": "google_cloud_apis",
-    }
-
-# 互換API: テキストからSOAP生成（Frontend互換）
-@app.post("/api/generateSoapFromText")
-async def generate_soap_from_text_compat(text: str = Form(None), transcribed_text: str = Form(None)):
-    if google_ai_service is None:
-        raise HTTPException(status_code=500, detail="AI service not initialized")
-    t = transcribed_text or text
-    if not t:
-        raise HTTPException(status_code=400, detail="text is required")
-    soap_notes = google_ai_service.generate_soap_from_text(t)
-    return {
-        "soap_notes": soap_notes.model_dump(),
-        "original_text": t,
+        "original_text": input_text,
         "status": "success",
         "service": "google_gemini",
     }
