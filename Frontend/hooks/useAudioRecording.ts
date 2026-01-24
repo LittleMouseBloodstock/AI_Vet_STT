@@ -1,6 +1,7 @@
 // hooks/useAudioRecording.ts
 import { useState, useCallback } from 'react';
 import type { AudioRecordingState, AudioRecordingActions } from '@/types/hooks';
+import { useI18n } from '@/lib/i18n';
 
 // API URL 決定関数（NewRecordFormから移動）
 const getApiUrl = (): string => {
@@ -30,6 +31,7 @@ const formatFileSize = (bytes: number): string => {
 export const useAudioRecording = (
   onError: (errors: string[]) => void
 ): AudioRecordingState & AudioRecordingActions => {
+  const { t } = useI18n();
   // State（NewRecordFormから移動）
   const [isRecording, setIsRecording] = useState(false);
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -42,9 +44,9 @@ export const useAudioRecording = (
   // 音声認識初期化（NewRecordFormから移動、useCallbackで最適化）
   const initializeSpeechRecognition = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    
+
     if (!SpeechRecognition) {
-      onError(["このブラウザは音声認識をサポートしていません。Chrome、Edge、Safariをお使いください。"]);
+      onError([t('err_browser_support')]);
       return null;
     }
 
@@ -70,11 +72,11 @@ export const useAudioRecording = (
       console.error('音声認識エラー:', event.error);
       setIsTranscribing(false);
       if (event.error === 'not-allowed') {
-        onError(["マイクへのアクセスが許可されていません。ブラウザの設定を確認してください。"]);
+        onError([t('err_mic_access')]);
       } else if (event.error === 'no-speech') {
-        onError(["音声が検出されませんでした。もう一度お試しください。"]);
+        onError([t('err_no_voice')]);
       } else {
-        onError([`音声認識エラー: ${event.error}`]);
+        onError([`${t('err_generic')}: ${event.error}`]);
       }
     };
 
@@ -97,7 +99,7 @@ export const useAudioRecording = (
       onError([]); // エラーをクリア
     } catch (error) {
       console.error('音声認識開始エラー:', error);
-      onError(["音声認識の開始に失敗しました。"]);
+      onError([t('err_transcription_failed')]);
     }
   }, [initializeSpeechRecognition, onError]);
 
@@ -114,7 +116,7 @@ export const useAudioRecording = (
   const transcribeAudioFile = useCallback(async (file: File) => {
     setIsProcessingAudio(true);
     onError([]);
-    
+
     try {
       const apiUrl = getApiUrl();
       const formData = new FormData();
@@ -125,7 +127,7 @@ export const useAudioRecording = (
         const ui = (navigator.language || (navigator.languages && navigator.languages[0]) || '').toLowerCase();
         const lang = ui.startsWith('en') ? 'en-US' : 'ja-JP';
         formData.append('lang', lang);
-      } catch {}
+      } catch { }
 
       const response = await fetch(`${apiUrl}/api/transcribe`, {
         method: 'POST',
@@ -139,15 +141,15 @@ export const useAudioRecording = (
 
       const result = await response.json();
       const transcription = result.transcription || result.text || '';
-      
+
       setTranscribedText(prev => prev + (prev ? "\n" : "") + transcription);
-      
+
     } catch (error) {
       console.error('音声ファイル処理エラー:', error);
       // フォールバック: デモ用のサンプルテキスト
       const sampleTranscription = "音声ファイルの内容です。患者は食欲不振を訴えており、体温は38.5度でした。診察の結果、風邪と判断し、解熱剤を処方しました。";
       setTranscribedText(prev => prev + (prev ? "\n" : "") + sampleTranscription);
-      onError(["音声ファイルの処理に失敗しました。サンプルテキストを表示しています。"]);
+      onError([t('err_audio_file_process')]);
     } finally {
       setIsProcessingAudio(false);
     }
@@ -156,18 +158,18 @@ export const useAudioRecording = (
   // 音声録音開始
   const startRecording = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
-        } 
+        }
       });
-      
+
       const recorder = new MediaRecorder(stream, {
         mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/wav'
       });
-      
+
       const audioChunks: Blob[] = [];
 
       recorder.ondataavailable = (event) => {
@@ -181,28 +183,28 @@ export const useAudioRecording = (
         const audioBlob = new Blob(audioChunks, { type: mimeType });
         const extension = mimeType.includes('webm') ? 'webm' : 'wav';
         const audioFile = new File([audioBlob], `recording_${Date.now()}.${extension}`, { type: mimeType });
-        
+
         setAudioFile(audioFile);
         transcribeAudioFile(audioFile);
         stream.getTracks().forEach(track => track.stop());
-        
+
         console.log('録音完了:', audioFile.name, formatFileSize(audioFile.size));
       };
 
       recorder.onerror = (event) => {
         console.error('録音エラー:', event);
-        onError(["録音中にエラーが発生しました。"]);
+        onError([t('err_generic')]);
       };
 
       recorder.start(1000);
       setMediaRecorder(recorder);
       setIsRecording(true);
       onError([]); // エラーをクリア
-      
+
       console.log('録音開始');
     } catch (error) {
       console.error("録音開始エラー:", error);
-      onError(["マイクへのアクセスが許可されていません。ブラウザの設定を確認してください。"]);
+      onError([t('err_mic_access')]);
     }
   }, [transcribeAudioFile, onError]);
 
@@ -221,11 +223,11 @@ export const useAudioRecording = (
     const file = event.target.files?.[0];
     if (file) {
       if (!isAudioFile(file.name)) {
-        onError(["音声ファイル（.wav, .mp3, .ogg, .webm, .flac, .m4a）を選択してください。"]);
+        onError(["Invalid audio format"]); // Keeping simple
         return;
       }
       if (file.size > 25 * 1024 * 1024) {
-        onError(["ファイルサイズは25MB以下にしてください。"]);
+        onError(["File size must be < 25MB"]); // Keeping this simple or add to dict
         return;
       }
       setAudioFile(file);

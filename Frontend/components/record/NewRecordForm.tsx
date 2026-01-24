@@ -43,7 +43,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
   const [soap, setSoap] = useState<SoapNotes>({ s: "", o: "", a: "", p: "" });
   const [errors, setErrors] = useState<string[]>([]);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
 
   // 音声・STT（フックで機能集約）
   const {
@@ -82,7 +82,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
   const validateForm = () => {
     const e: string[] = [];
     if (!soap.s && !soap.o && !soap.a && !soap.p) {
-      e.push("最低でも1つのSOAP項目（S/O/A/P）を入力してください。");
+      e.push(t('err_soap_required'));
     }
     if (false && nextVisitDate && !nextVisitTime) {
       e.push("次回予約日を設定した場合、時間も選択してください。");
@@ -109,7 +109,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
       setErrors([]);
     } catch (err) {
       console.error("カメラ起動エラー:", err);
-      setErrors(["カメラへのアクセスが許可されていません。ブラウザの設定を確認してください。"]);
+      setErrors([t('err_camera_access')]);
       setIsCameraOpen(false);
     } finally {
       setIsCameraLoading(false);
@@ -127,7 +127,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
 
   const capturePhoto = async () => {
     if (!videoRef.current || !canvasRef.current) {
-      setErrors(["カメラまたはキャンバスの準備ができていません。"]);
+      setErrors([t('err_image_prep_failed')]);
       return;
     }
     const video = videoRef.current;
@@ -135,7 +135,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
     const ctx = canvas.getContext("2d");
     if (!ctx) { setErrors(["キャンバスコンテキストを取得できませんでした。"]); return; }
     if (video.readyState !== video.HAVE_ENOUGH_DATA) {
-      setErrors(["ビデオの準備ができていません。少し待ってからもう一度お試しください。"]); return;
+      setErrors([t('err_video_not_ready')]); return;
     }
     const w = video.videoWidth || video.clientWidth;
     const h = video.videoHeight || video.clientHeight;
@@ -147,7 +147,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
       canvas.toBlob((blob) => {
         if (!blob) return reject(new Error("toBlob失敗"));
         const file = new File([blob], `photo_${Date.now()}.jpg`, { type: "image/jpeg" });
-        if (images.length >= 10) { setErrors(["画像は最大10枚まで撮影できます。"]); return resolve(); }
+        if (images.length >= 10) { setErrors([t('err_max_images')]); return resolve(); }
         setImages((prev) => [...prev, file]);
         resolve();
       }, "image/jpeg", 0.9);
@@ -158,7 +158,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
     const files = Array.from(e.target.files || []);
     const valid = files.filter((f) => f.type.startsWith("image/") && f.size <= 5 * 1024 * 1024);
     if (valid.length + images.length > 10) {
-      setErrors(["画像は最大10枚まで選択できます。"]); return;
+      setErrors([t('err_max_images_selected')]); return;
     }
     setImages((prev) => [...prev, ...valid]);
     setErrors([]);
@@ -169,7 +169,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
   // AI: テキスト→SOAP 変換
   const handleConvertToSoap = async () => {
     if (!transcribedText.trim()) {
-      setErrors(["転写テキストがありません。"]); return;
+      setErrors([t('err_no_text')]); return;
     }
     setErrors([]);
     try {
@@ -177,7 +177,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
       const s: SoapNotes = (result as any).soap_notes || (result as any);
       setSoap(s);
     } catch (e: any) {
-      setErrors([`自動変換エラー: ${e.message || e}`]);
+      setErrors([`${t('err_auto_convert')}: ${e.message || e}`]);
     }
   };
 
@@ -213,7 +213,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
       stopCamera();
       stopSpeechRecognition();
     } catch (err: any) {
-      setErrors([`保存に失敗しました: ${err.message ?? err}`]);
+      setErrors([`${t('err_save_failed')}: ${err.message ?? err}`]);
     } finally {
       setIsProcessing(false);
     }
@@ -221,7 +221,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
-      <h3 className="text-xl font-bold text-gray-800 mb-4">新しい診療記録</h3>
+      <h3 className="text-xl font-bold text-gray-800 mb-4">{t('new_record_title')}</h3>
 
       {/* エラー表示 */}
       {errors.length > 0 && (
@@ -236,51 +236,51 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
       {/* 完了表示 */}
       {saveSuccess && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-green-800">
-          記録が正常に保存されました
+          {t('msg_save_success')}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 音声（録音/リアルタイム認識/音声ファイル） */}
         <div className="space-y-4">
-          <h4 className="font-semibold text-gray-800">音声入力</h4>
+          <h4 className="font-semibold text-gray-800">{t('label_voice_input')}</h4>
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={isTranscribing ? stopSpeechRecognition : startSpeechRecognition}
               className={`flex items-center px-4 py-2 rounded-md transition ${isTranscribing ? "bg-red-600 text-white hover:bg-red-700" : "bg-purple-600 text-white hover:bg-purple-700"}`}>
               {isTranscribing ? <MicOff className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
-              {isTranscribing ? "認識停止" : "リアルタイム認識"}
+              {isTranscribing ? t('btn_stop_recognition') : t('btn_start_recognition')}
             </button>
             <button type="button" onClick={isRecording ? stopRecording : startRecording}
               className={`flex items-center px-4 py-2 rounded-md transition ${isRecording ? "bg-red-600 text-white hover:bg-red-700" : "bg-blue-600 text-white hover:bg-blue-700"}`}>
               {isRecording ? <MicOff className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
-              {isRecording ? "録音停止" : "録音して文字起こし"}
+              {isRecording ? t('btn_stop_recording') : t('btn_start_recording')}
             </button>
             <label className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-md cursor-pointer hover:bg-gray-700 transition">
-              <Upload className="mr-2 h-4 w-4" /> 音声ファイル選択
+              <Upload className="mr-2 h-4 w-4" /> {t('btn_select_audio_file')}
               <input type="file" accept="audio/*" onChange={handleAudioFileChange} className="hidden" />
             </label>
           </div>
 
           {isTranscribing && (
             <div className="p-3 bg-purple-50 border border-purple-200 rounded-md text-purple-800">
-              <Loader2 className="mr-2 h-4 w-4 inline animate-spin" /> 音声認識中... 話してください
+              <Loader2 className="mr-2 h-4 w-4 inline animate-spin" /> {t('status_listening')}
             </div>
           )}
           {isProcessingAudio && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-800">
-              <Loader2 className="mr-2 h-4 w-4 inline animate-spin" /> 音声ファイルを処理中...
+              <Loader2 className="mr-2 h-4 w-4 inline animate-spin" /> {t('status_processing_audio')}
             </div>
           )}
 
           {audioFile && (
             <div className="p-3 bg-gray-50 rounded-md">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-800">選択されたファイル: {audioFile.name}</p>
-                <button type="button" onClick={removeAudioFile} className="text-red-600 hover:text-red-800 text-sm font-medium">削除</button>
+                <p className="text-sm text-gray-800">{t('label_selected_file').replace('{name}', audioFile.name)}</p>
+                <button type="button" onClick={removeAudioFile} className="text-red-600 hover:text-red-800 text-sm font-medium">{t('btn_delete')}</button>
               </div>
               <audio controls className="mt-2 w-full">
                 <source src={URL.createObjectURL(audioFile)} type={audioFile.type} />
-                お使いのブラウザは音声の再生をサポートしていません。
+                {t('err_browser_audio')}
               </audio>
             </div>
           )}
@@ -288,64 +288,64 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
           {/* 転写テキスト */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-gray-800">転写テキスト</h4>
+              <h4 className="font-semibold text-gray-800">{t('label_transcription')}</h4>
               {transcribedText.trim() && (
                 <button type="button" onClick={handleConvertToSoap} className="flex items-center px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition text-sm disabled:bg-purple-300 disabled:cursor-not-allowed">
-                  <Sparkles className="mr-2 h-4 w-4" /> AIでSOAP変換
+                  <Sparkles className="mr-2 h-4 w-4" /> {t('btn_ai_soap')}
                 </button>
               )}
             </div>
             <textarea value={transcribedText} onChange={(e) => setTranscribedText(e.target.value)} rows={4}
               className="w-full p-2 border border-gray-300 rounded-md block font-semibold text-gray-800 text-sm"
-              placeholder="ここに音声認識結果が表示、または手動で入力します" />
+              placeholder={t('placeholder_transcription')} />
           </div>
         </div>
 
         {/* 投薬（薬剤名/用量/投与ルート） */}
         <div className="space-y-3">
-          <h4 className="font-semibold text-gray-800">投薬</h4>
+          <h4 className="font-semibold text-gray-800">{t('section_medication')}</h4>
           <div className="space-y-2">
             {medications.map((m, idx) => (
               <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
                 <input value={m.name} onChange={(e) => {
                   const v = [...medications]; v[idx] = { ...v[idx], name: e.target.value }; setMedications(v);
-                }} placeholder="薬剤名" className="md:col-span-5 border rounded p-2 text-sm" />
+                }} placeholder={t('placeholder_drug_name')} className="md:col-span-5 border rounded p-2 text-sm" />
                 <input value={m.dose || ''} onChange={(e) => {
                   const v = [...medications]; v[idx] = { ...v[idx], dose: e.target.value }; setMedications(v);
-                }} placeholder="用量(例: 5mg/kg)" className="md:col-span-4 border rounded p-2 text-sm" />
+                }} placeholder={t('placeholder_dose')} className="md:col-span-4 border rounded p-2 text-sm" />
                 <select value={m.route || ''} onChange={(e) => {
                   const v = [...medications]; v[idx] = { ...v[idx], route: e.target.value }; setMedications(v);
                 }} className="md:col-span-2 border rounded p-2 text-sm">
-                  <option value="">投与ルート</option>
-                  <option value="PO">PO(経口)</option>
-                  <option value="IM">IM(筋注)</option>
-                  <option value="IV">IV(静注)</option>
-                  <option value="SC">SC(皮下)</option>
+                  <option value="">{t('placeholder_route')}</option>
+                  <option value="PO">PO</option>
+                  <option value="IM">IM</option>
+                  <option value="IV">IV</option>
+                  <option value="SC">SC</option>
                 </select>
-                <button type="button" onClick={() => setMedications(medications.filter((_, i) => i !== idx))} className="md:col-span-1 text-red-600 text-sm">削除</button>
+                <button type="button" onClick={() => setMedications(medications.filter((_, i) => i !== idx))} className="md:col-span-1 text-red-600 text-sm">{t('btn_delete')}</button>
               </div>
             ))}
           </div>
-          <button type="button" onClick={() => setMedications([...medications, { name: '' }])} className="px-3 py-1 bg-gray-100 border rounded text-sm">投薬を追加</button>
+          <button type="button" onClick={() => setMedications([...medications, { name: '' }])} className="px-3 py-1 bg-gray-100 border rounded text-sm">{t('btn_add_medication')}</button>
         </div>
 
         {/* NOSAI 点数（オプション） */}
         <div className="space-y-2">
-          <h4 className="font-semibold text-gray-800">NOSAI（任意）</h4>
-          <input type="number" min={0} value={nosaiPoints ?? ''} onChange={(e) => setNosaiPoints(e.target.value === '' ? undefined : Number(e.target.value))} className="border rounded p-2 w-40 text-sm" placeholder="治療点数" />
+          <h4 className="font-semibold text-gray-800">{t('section_nosai')}</h4>
+          <input type="number" min={0} value={nosaiPoints ?? ''} onChange={(e) => setNosaiPoints(e.target.value === '' ? undefined : Number(e.target.value))} className="border rounded p-2 w-40 text-sm" placeholder={t('placeholder_points')} />
         </div>
 
         {/* 画像（撮影/アップロード/プレビュー） */}
         <div className="space-y-4">
-          <h4 className="font-semibold text-gray-800">診療画像（最大10枚、各5MB以下）</h4>
+          <h4 className="font-semibold text-gray-800">{t('section_images')}</h4>
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={isCameraOpen ? stopCamera : startCamera}
               disabled={isCameraLoading || images.length >= 10}
               className={`flex items-center px-4 py-2 rounded-md transition ${isCameraOpen ? "bg-red-600 text-white hover:bg-red-700" : "bg-green-600 text-white hover:bg-green-700"} ${(isCameraLoading || images.length >= 10) ? "opacity-50 cursor-not-allowed" : ""}`}>
-              {isCameraLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />} {isCameraOpen ? "カメラ停止" : "カメラで撮影"}
+              {isCameraLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Camera className="mr-2 h-4 w-4" />} {isCameraOpen ? t('btn_stop_camera') : t('btn_start_camera')}
             </button>
             <label className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer hover:bg-blue-700 transition">
-              <Upload className="mr-2 h-4 w-4" /> ファイルから選択({images.length}/10)
+              <Upload className="mr-2 h-4 w-4" /> {t('btn_select_file')}({images.length}/10)
               <input type="file" accept="image/*" multiple onChange={handleImageChange} disabled={images.length >= 10} className="hidden" />
             </label>
           </div>
@@ -364,7 +364,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
                 </button>
                 <div className="absolute top-4 right-14 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">{images.length}/10</div>
               </div>
-              <p className="text-sm text-gray-700 text-center">カメラを被写体に向けて、下のボタンで撮影してください</p>
+              <p className="text-sm text-gray-700 text-center">{t('camera_instruction')}</p>
             </div>
           )}
           {images.length > 0 && (
@@ -383,18 +383,18 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
 
         {/* SOAP 入力 */}
         <div className="space-y-4">
-          <h4 className="font-semibold text-gray-800">診療ノート</h4>
+          <h4 className="font-semibold text-gray-800">{t('section_soap')}</h4>
           {Object.entries(soap).map(([key, value]) => (
             <div key={key}>
               <label className="w-full block font-semibold text-gray-800 text-sm mb-1">
-                {key.toUpperCase()}: {key === "s" ? "Subjective (主観情報)" : key === "o" ? "Objective (客観情報)" : key === "a" ? "Assessment (評価・診断)" : "Plan (計画・治療)"}
+                {key.toUpperCase()}: {key === "s" ? "Subjective (S)" : key === "o" ? "Objective (O)" : key === "a" ? "Assessment (A)" : "Plan (P)"}
               </label>
               <textarea
                 value={value}
                 onChange={(e) => setSoap((prev) => ({ ...prev, [key]: e.target.value }))}
                 className="w-full block font-semibold text-gray-800 text-sm mb-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 rows={key === "s" || key === "o" ? 3 : 2}
-                placeholder={`${key.toUpperCase()}の内容を入力してください`}
+                placeholder={t('placeholder_soap_input').replace('{key}', key.toUpperCase())}
               />
             </div>
           ))}
@@ -402,26 +402,26 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
 
         {/* 次回診療予定 */}
         <div className="space-y-4">
-          <h4 className="font-semibold text-gray-800">次回診療予定（オプション）</h4>
+          <h4 className="font-semibold text-gray-800">{t('section_next_visit')}</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                <CalendarIcon className="inline h-4 w-4 mr-1" /> 予定日
+                <CalendarIcon className="inline h-4 w-4 mr-1" /> {t('label_date')}
               </label>
               <input type="date" value={nextVisitDate} onChange={(e) => setNextVisitDate(e.target.value)} min={today}
                 className="w-full block font-semibold text-gray-800 text-sm mb-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">予定時間</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('label_time')}</label>
               <select value={nextVisitTime} onChange={(e) => setNextVisitTime(e.target.value)}
                 className="w-full block font-semibold text-gray-800 text-sm mb-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
-                <option value="">時間を選択</option>
+                <option value="">{t('placeholder_select_time')}</option>
                 {TIME_OPTIONS.map((time) => {
                   const existingAppointments = nextVisitDate ? appointments[nextVisitDate] || [] : [];
                   const isTimeBooked = existingAppointments.some((apt) => apt.time === time);
                   return (
                     <option key={time} value={time} disabled={isTimeBooked}>
-                      {time} {isTimeBooked ? "（予約済み）" : ""}
+                      {time} {isTimeBooked ? t('status_booked') : ""}
                     </option>
                   );
                 })}
@@ -435,7 +435,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
               onClick={() => setShowCalendarModal(true)}
               className="h-9 md:h-10 px-3 mt-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition w-full md:w-auto"
             >
-              カレンダー拡大
+              {t('btn_expand_calendar')}
             </button>
           </div>
 
@@ -444,7 +444,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
               <div className="absolute inset-0 bg-black/50" onClick={() => setShowCalendarModal(false)} />
               <div className="relative bg-white w-screen h-screen md:w-[95vw] md:max-w-4xl md:max-h-[90vh] md:h-auto rounded-none md:rounded-lg shadow-lg p-2 md:p-4 overflow-auto">
                 <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-base md:text-lg font-bold text-gray-900">スケジュール（拡大表示）</h3>
+                  <h3 className="text-base md:text-lg font-bold text-gray-900">{t('modal_schedule_title')}</h3>
                   <button onClick={() => setShowCalendarModal(false)} className="text-gray-600 hover:text-black text-xl leading-none">×</button>
                 </div>
                 <div className="mb-2 flex gap-2">
@@ -452,23 +452,23 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
                     type="button"
                     className={`px-3 py-1 rounded border ${calendarMode === 'list' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-800 border-gray-300'}`}
                     onClick={() => setCalendarMode('list')}
-                  >一覧</button>
+                  >{t('view_list')}</button>
                   <button
                     type="button"
                     className={`px-3 py-1 rounded border ${calendarMode === 'month' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-800 border-gray-300'}`}
                     onClick={() => setCalendarMode('month')}
-                  >月表示</button>
+                  >{t('view_month')}</button>
                   <div className="ml-auto flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setNextVisitDate(today)}
                       className="px-3 py-1 rounded bg-gray-100 text-gray-800 hover:bg-gray-200"
-                    >今日へ</button>
+                    >{t('btn_today')}</button>
                   </div>
                 </div>
                 {calendarMode === 'list' ? (
                   <div className="border rounded-md p-2 text-[15px] md:text-base">
-                    <h4 className="font-semibold mb-2">{(nextVisitDate || today)} の予定</h4>
+                    <h4 className="font-semibold mb-2">{(nextVisitDate || today)} {t('suffix_schedule')}</h4>
                     <div className="max-h-[70vh] overflow-auto divide-y">
                       {((appointments[nextVisitDate || today] || []) as any[]).length > 0 ? (
                         ((appointments[nextVisitDate || today] || []) as any[])
@@ -485,7 +485,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
                             </div>
                           ))
                       ) : (
-                        <div className="py-6 text-center text-gray-600">この日に予定はありません</div>
+                        <div className="py-6 text-center text-gray-600">{t('msg_no_appointments')}</div>
                       )}
                     </div>
                   </div>
@@ -512,17 +512,17 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
         <div className="flex justify-end space-x-3">
           <button type="button" onClick={() => { setSoap({ s: "", o: "", a: "", p: "" }); setImages([]); setTranscribedText(""); setNextVisitDate(""); setNextVisitTime(""); stopCamera(); stopSpeechRecognition(); setErrors([]); }}
             className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition">
-            リセット
+            {t('btn_reset')}
           </button>
           <button type="submit" disabled={isProcessing}
             className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:bg-blue-300 disabled:cursor-not-allowed">
             {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            {isProcessing ? "保存中..." : "診療記録を保存"}
+            {isProcessing ? t('btn_saving') : t('btn_save_record')}
           </button>
         </div>
         {/* 画像選択（カメラ対応） */}
         <div className="mt-4">
-          <label className="block text-sm font-semibold text-gray-800 mb-1">画像を追加</label>
+          <label className="block text-sm font-semibold text-gray-800 mb-1">{t('label_add_image')}</label>
           <input
             type="file"
             accept="image/*"

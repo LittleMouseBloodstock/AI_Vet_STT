@@ -20,6 +20,7 @@ import {
 import NewRecordForm from "../record/NewRecordForm";
 import Translatable from "@/components/shared/Translatable";
 import { TIME_OPTIONS } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 interface AnimalDetailProps {
   data: any;
@@ -49,6 +50,7 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
   onSelectAnimal,
   onAppointmentsUpdate,
 }) => {
+  const { t } = useI18n();
   // デバッグ用 - レンダリング時刻を表示
   const [renderTime] = useState(new Date().toLocaleTimeString());
 
@@ -67,19 +69,19 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
             onClick={onBack}
             className="flex items-center text-blue-600 hover:underline"
           >
-            <ArrowLeft className="mr-1 h-4 w-4" /> 検索結果に戻る
+            <ArrowLeft className="mr-1 h-4 w-4" /> {t('back_to_results')}
           </button>
           <button
             onClick={onHome}
             className="flex items-center text-gray-600 hover:text-blue-600 transition-colors"
           >
-            <Home className="mr-1 h-4 w-4" /> ホームへ
+            <Home className="mr-1 h-4 w-4" /> {t('go_home')}
           </button>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="flex items-center justify-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-2" />
-            <p className="text-gray-600">データを読み込み中...</p>
+            <p className="text-gray-600">{t('loading_data')}</p>
           </div>
         </div>
       </div>
@@ -109,11 +111,11 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
     recentRecords.forEach((record) => {
       const assessment = record.soap?.assessment || record.soap?.a || '';
       const plan = record.soap?.plan || record.soap?.p || '';
-      
+
       if (assessment && assessment.trim() !== '異常なし。' && assessment.trim() !== '異常なし' && assessment.trim() !== '') {
         issues.add(assessment);
       }
-      
+
       if (plan && plan.trim() !== '経過観察。' && plan.trim() !== '経過観察' && plan.trim() !== '') {
         treatments.add(plan);
       }
@@ -138,7 +140,7 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
       p: (record.soap?.plan || record.soap?.p || '') as string
     };
     setEditedSoap(convertedSoap);
-   
+
     if (record.next_visit_date) {
       try {
         if (record.next_visit_date.includes("T")) {
@@ -209,7 +211,7 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
   const renderImages = (rec: any) => {
     console.log("🖼️ 画像レンダリング開始 - Record ID:", rec.id);
     console.log("📸 Record全体:", JSON.stringify(rec, null, 2));
-    
+
     // 可能性のある画像フィールドをチェック
     const imageFields = ['images', 'image', 'photo', 'photos', 'attachments'];
     let foundImages: string[] = [];
@@ -217,9 +219,9 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
     imageFields.forEach(field => {
       if (rec[field]) {
         console.log(`🔍 フィールド '${field}' 発見:`, rec[field]);
-        
+
         if (Array.isArray(rec[field])) {
-                      const validImages = rec[field].filter((img: any) => {
+          const validImages = rec[field].filter((img: any) => {
             if (typeof img === 'string' && img.trim()) {
               // 開発環境ではplaceholder画像も表示する
               if (process.env.NODE_ENV === 'development' || !img.includes('placeholder')) {
@@ -260,8 +262,8 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
             return (
               <div key={index} className="relative group">
                 <img
-                  src={imageUrl.includes('placeholder') 
-                    ? 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRTVFN0VCIi8+CjxwYXRoIGQ9Ik0yNDAgMjAwSDM2MFYzMjBIMjQwVjIwMFoiIGZpbGw9IiM5Q0E2QUYiLz4KPHBhdGggZD0iTTI2MCAyMDBIMzQwVjI2MEgyNjBWMjAwWiIgZmlsbD0iIzZCNzI4MCIvPgo8Y2lyY2xlIGN4PSIyODAiIGN5PSIyMjAiIHI9IjEwIiBmaWxsPSIjOUM5OTk5Ii8+CjwvcmVnPgo8dGV4dCB4PSIzMDAiIHk9IjIxMCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNkI3MjgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj7nlLvlg4g8L3RleHQ+CjwvcGc+' 
+                  src={imageUrl.includes('placeholder')
+                    ? 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI2MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRTVFN0VCIi8+CjxwYXRoIGQ9Ik0yNDAgMjAwSDM2MFYzMjBIMjQwVjIwMFoiIGZpbGw9IiM5Q0E2QUYiLz4KPHBhdGggZD0iTTI2MCAyMDBIMzQwVjI2MEgyNjBWMjAwWiIgZmlsbD0iIzZCNzI4MCIvPgo8Y2lyY2xlIGN4PSIyODAiIGN5PSIyMjAiIHI9IjEwIiBmaWxsPSIjOUM5OTk5Ii8+CjwvcmVnPgo8dGV4dCB4PSIzMDAiIHk9IjIxMCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNkI3MjgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj7nlLvlg4g8L3RleHQ+CjwvcGc+'
                     : imageUrl
                   }
                   alt={`診療画像 ${index + 1}`}
@@ -313,7 +315,7 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
       <div className="mt-4 bg-gray-50 p-4 rounded-lg">
         <div className="flex items-center mb-3">
           <ImageIcon className="h-5 w-5 text-blue-600 mr-2" />
-          <p className="font-semibold text-gray-800">診療画像 ({urls.length}枚)</p>
+          <p className="font-semibold text-gray-800">{t('medical_images_title').replace('{n}', String(urls.length))}</p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {urls.map((u, i) => (
@@ -326,7 +328,7 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
                 onClick={() => window.open(u, '_blank')}
               />
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-md flex items-center justify-center">
-                <span className="text-white opacity-0 group-hover:opacity-100 text-sm font-medium">拡大表示</span>
+                <span className="text-white opacity-0 group-hover:opacity-100 text-sm font-medium">{t('click_to_enlarge')}</span>
               </div>
             </div>
           ))}
@@ -358,13 +360,13 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
           onClick={onBack}
           className="flex items-center text-blue-600 hover:underline"
         >
-          <ArrowLeft className="mr-1 h-4 w-4" /> 検索結果に戻る
+          <ArrowLeft className="mr-1 h-4 w-4" /> {t('back_to_results')}
         </button>
         <button
           onClick={onHome}
           className="flex items-center text-gray-600 hover:text-blue-600 transition-colors"
         >
-          <Home className="mr-1 h-4 w-4" /> ホームへ
+          <Home className="mr-1 h-4 w-4" /> {t('go_home')}
         </button>
       </div>
 
@@ -372,10 +374,10 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
       <div className="bg-white p-6 rounded-lg shadow-md mb-6" data-testid="detail-view">
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
           <div className="flex-1">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">{animal?.name || 'データなし'}</h2>
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">{animal?.name || t('no_data')}</h2>
             <div className="space-y-1 text-gray-600">
-              <p>マイクロチップ: <span className="font-medium text-gray-800">{animal?.microchip_number || 'データなし'}</span></p>
-              <p>所属: <span className="font-medium text-gray-800">{animal?.farm_id || 'データなし'}</span></p>
+              <p>{t('detail_microchip')}: <span className="font-medium text-gray-800">{animal?.microchip_number || t('no_data')}</span></p>
+              <p>{t('detail_farm')}: <span className="font-medium text-gray-800">{animal?.farm_id || t('no_data')}</span></p>
             </div>
           </div>
 
@@ -384,20 +386,20 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
             {process.env.NEXT_PUBLIC_E2E !== '1' && medicalSummary && (
               <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                 <h4 className="font-bold flex items-center mb-3 text-blue-800">
-                  <Activity className="mr-2 h-4 w-4" /> 病歴概要
+                  <Activity className="mr-2 h-4 w-4" /> {t('medical_summary_title')}
                 </h4>
-                
+
                 <div className="space-y-4 text-sm">
                   <div className="flex items-center text-blue-700">
                     <Clock className="mr-2 h-4 w-4" />
-                    <span className="font-medium">総診療回数: {medicalSummary.totalRecords}回</span>
+                    <span className="font-medium">{t('total_consultations').replace('{n}', String(medicalSummary.totalRecords))}</span>
                   </div>
 
                   {medicalSummary.issues.length > 0 && (
                     <div>
                       <h5 className="font-semibold text-blue-800 flex items-center mb-2">
                         <AlertTriangle className="mr-2 h-4 w-4 text-orange-600" />
-                        主な診断
+                        {t('key_diagnoses')}
                       </h5>
                       <div className="space-y-2 ml-6">
                         {medicalSummary.issues.map((issue, index) => (
@@ -411,7 +413,7 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
                     <div>
                       <h5 className="font-semibold text-blue-800 flex items-center mb-2">
                         <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-                        主な治療方針
+                        {t('key_treatments')}
                       </h5>
                       <div className="space-y-2 ml-6">
                         {medicalSummary.treatments.map((treatment, index) => (
@@ -423,7 +425,7 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
 
                   <div className="pt-3 border-t border-blue-200">
                     <p className="text-sm text-blue-600 font-medium">
-                      最終診療: {medicalSummary?.recentRecords[0]?.visit_date || '記録なし'}
+                      {t('last_consultation')}: {medicalSummary?.recentRecords[0]?.visit_date || t('no_record_date')}
                     </p>
                   </div>
                 </div>
@@ -448,7 +450,7 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
       {/* 記録一覧 */}
       <div className="mt-8">
         <h3 className="text-2xl font-bold text-gray-800 mb-4">
-          過去の診療記録
+          {t('past_records_title')}
         </h3>
         <div className="space-y-4">
           {records.length > 0 ? (
@@ -460,11 +462,10 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
               .map((rec: any) => (
                 <div
                   key={rec.id}
-                  className={`bg-white p-5 rounded-lg shadow-sm border border-gray-200 transition-all ${
-                    editingRecordId === rec.id
+                  className={`bg-white p-5 rounded-lg shadow-sm border border-gray-200 transition-all ${editingRecordId === rec.id
                       ? "bg-blue-50 border-blue-400 ring-2 ring-blue-300"
                       : ""
-                  }`}
+                    }`}
                 >
                   {/* 記録ヘッダー */}
                   <div className="flex justify-between items-center mb-3">
@@ -535,7 +536,7 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
                           htmlFor="edit-next-visit-date"
                           className="font-semibold text-gray-800 flex items-center text-sm"
                         >
-                          <Calendar className="mr-2 h-4 w-4" /> 次回診療予定日
+                          <Calendar className="mr-2 h-4 w-4" /> {t('label_next_visit_date')}
                         </label>
                         <div className="flex space-x-2">
                           <input
@@ -555,7 +556,7 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
                             }
                             className="w-1/2 p-2 border border-gray-300 rounded-md text-gray-800"
                           >
-                            <option value="">時間を選択</option>
+                            <option value="">{t('placeholder_select_time')}</option>
                             {TIME_OPTIONS.map((time) => (
                               <option key={time} value={time}>
                                 {time}
@@ -585,16 +586,16 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
                           <Translatable text={(rec.soap?.plan || rec.soap?.p || '') as string} />
                         </p>
                       </div>
-                      
+
                       {/* 画像表示 - 新しい関数を使用 */}
                       {renderImagesV2(rec)}
-                      
+
                       {rec.next_visit_date && (
                         <div className="mt-4 p-3 bg-purple-100 border-l-4 border-purple-500 rounded-r-lg">
                           <div className="flex items-center">
                             <Calendar className="h-5 w-5 text-purple-700 mr-2" />
                             <span className="text-sm font-semibold text-purple-900">
-                              次回予定: {rec.next_visit_date.includes("T") ? rec.next_visit_date.replace("T", " ") : rec.next_visit_date}
+                              {t('next_visit_label')}: {rec.next_visit_date.includes("T") ? rec.next_visit_date.replace("T", " ") : rec.next_visit_date}
                             </span>
                           </div>
                         </div>
@@ -607,7 +608,7 @@ const AnimalDetail: React.FC<AnimalDetailProps> = ({
             <div className="text-center py-10 bg-gray-50 rounded-lg">
               <Bone className="mx-auto h-12 w-12 text-gray-400" />
               <p className="mt-2 text-gray-800">
-                この個体の診療記録はまだありません。
+                {t('no_records_message')}
               </p>
             </div>
           )}

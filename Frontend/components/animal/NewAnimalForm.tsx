@@ -9,6 +9,7 @@ import {
   Save,
 } from "lucide-react";
 import type { NewAnimalFormData } from "@/types";
+import { useI18n } from "@/lib/i18n";
 
 interface NewAnimalFormProps {
   onBack: () => void;
@@ -27,6 +28,7 @@ const NewAnimalForm: React.FC<NewAnimalFormProps> = ({
   error,
   setError,
 }) => {
+  const { t } = useI18n();
   const [animal, setAnimal] = useState<NewAnimalFormData>({
     microchip_number: "",
     farm_id: "",
@@ -61,7 +63,7 @@ const NewAnimalForm: React.FC<NewAnimalFormProps> = ({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!animal.microchip_number || !animal.farm_id || !animal.name) {
-      setError("全ての必須項目を入力してください。");
+      setError(t('err_required_all'));
       return;
     }
     setError("");
@@ -74,11 +76,11 @@ const NewAnimalForm: React.FC<NewAnimalFormProps> = ({
         onClick={onBack}
         className="flex items-center text-blue-600 hover:underline mb-4"
       >
-        <ArrowLeft className="mr-1 h-4 w-4" /> 検索画面に戻る
+        <ArrowLeft className="mr-1 h-4 w-4" /> {t('back_to_search')}
       </button>
       <div className="bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-2xl font-bold text-gray-800 flex items-center mb-4">
-          <PlusCircle className="mr-2 text-blue-600" /> 新しい動物を登録
+          <PlusCircle className="mr-2 text-blue-600" /> {t('new_animal_title')}
         </h2>
         {error && (
           <p className="text-red-500 mb-4 bg-red-100 p-3 rounded-md">{error}</p>
@@ -89,7 +91,7 @@ const NewAnimalForm: React.FC<NewAnimalFormProps> = ({
               htmlFor="microchip_number"
               className="font-semibold text-gray-800 flex items-center mb-1"
             >
-              <Database className="mr-2 h-4 w-4" /> マイクロチップ番号{" "}
+              <Database className="mr-2 h-4 w-4" /> {t('label_microchip')}{" "}
               <span className="text-red-500 ml-2">*</span>
             </label>
             <input
@@ -98,7 +100,7 @@ const NewAnimalForm: React.FC<NewAnimalFormProps> = ({
               type="text"
               value={animal.microchip_number}
               onChange={handleChange}
-              placeholder="10桁以上の半角数字"
+              placeholder={t('placeholder_microchip')}
               className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800"
               required
               data-testid="input-microchip"
@@ -109,7 +111,7 @@ const NewAnimalForm: React.FC<NewAnimalFormProps> = ({
               htmlFor="farm_id"
               className="font-semibold text-gray-800 flex items-center mb-1"
             >
-              <Building className="mr-2 h-4 w-4" /> 牧場名{" "}
+              <Building className="mr-2 h-4 w-4" /> {t('label_farm_name')}{" "}
               <span className="text-red-500 ml-2">*</span>
             </label>
             <input
@@ -128,7 +130,7 @@ const NewAnimalForm: React.FC<NewAnimalFormProps> = ({
               htmlFor="name"
               className="font-semibold text-gray-800 flex items-center mb-1"
             >
-              <Bone className="mr-2 h-4 w-4" /> 個体名{" "}
+              <Bone className="mr-2 h-4 w-4" /> {t('label_animal_name')}{" "}
               <span className="text-red-500 ml-2">*</span>
             </label>
             <input
@@ -151,11 +153,11 @@ const NewAnimalForm: React.FC<NewAnimalFormProps> = ({
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="animate-spin mr-2" /> 登録中...{" "}
+                  <Loader2 className="animate-spin mr-2" /> {t('status_registering')}{" "}
                 </>
               ) : (
                 <>
-                  <Save className="mr-2" /> 登録してカルテ作成へ
+                  <Save className="mr-2" /> {t('btn_register_chart')}
                 </>
               )}
             </button>
