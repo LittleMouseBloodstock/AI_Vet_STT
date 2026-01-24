@@ -7,6 +7,7 @@ import VetCalendar from "@/components/calendar/VetCalendar";
 import { TIME_OPTIONS } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
+import { useI18n } from "@/lib/i18n";
 
 interface NewRecordFormProps {
   onSave: (recordData: {
@@ -42,6 +43,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
   const [soap, setSoap] = useState<SoapNotes>({ s: "", o: "", a: "", p: "" });
   const [errors, setErrors] = useState<string[]>([]);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const { lang } = useI18n();
 
   // 音声・STT（フックで機能集約）
   const {
@@ -171,7 +173,7 @@ const NewRecordForm: React.FC<NewRecordFormProps> = (
     }
     setErrors([]);
     try {
-      const result = await api.generateSoapFromText(transcribedText.trim());
+      const result = await api.generateSoapFromText(transcribedText.trim(), lang);
       const s: SoapNotes = (result as any).soap_notes || (result as any);
       setSoap(s);
     } catch (e: any) {

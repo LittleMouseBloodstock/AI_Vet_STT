@@ -1,9 +1,9 @@
 // fakeApi.ts - 完全なモックAPIの実装
-import type { 
-  Animal, 
-  Record, 
-  AnimalDetailData, 
-  UploadResponse, 
+import type {
+  Animal,
+  Record,
+  AnimalDetailData,
+  UploadResponse,
   TranscribeResponse,
   SoapGenerationResponse,
   RecordCreationResponse,
@@ -43,36 +43,36 @@ export class FakeApiClient {
   // 動物関連のAPI
   async searchAnimals(query: string = "", filters?: SearchFilters): Promise<Animal[]> {
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     let results = mockAnimals;
-    
+
     if (query) {
-      results = results.filter(animal => 
-        animal.name.includes(query) || 
+      results = results.filter(animal =>
+        animal.name.includes(query) ||
         animal.breed.includes(query) ||
         animal.owner.includes(query)
       );
     }
-    
+
     if (filters?.sex) {
       results = results.filter(animal => animal.sex === filters.sex);
     }
-    
+
     if (filters?.breed) {
       results = results.filter(animal => animal.breed === filters.breed);
     }
-    
+
     return results;
   }
 
   async fetchAnimalDetail(animalId: string): Promise<AnimalDetailData> {
     await new Promise(resolve => setTimeout(resolve, 300));
-    
+
     const animal = mockAnimals.find(a => a.id === animalId);
     if (!animal) {
       throw new Error("Animal not found");
     }
-    
+
     return {
       ...animal,
       records: [
@@ -98,7 +98,7 @@ export class FakeApiClient {
 
   async createAnimal(animalData: NewAnimalFormData): Promise<Animal> {
     await new Promise(resolve => setTimeout(resolve, 800));
-    
+
     const newAnimal: Animal = {
       id: Date.now().toString(),
       name: animalData.name,
@@ -112,25 +112,25 @@ export class FakeApiClient {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    
+
     mockAnimals.push(newAnimal);
     return newAnimal;
   }
 
   async updateAnimal(animalId: string, animalData: Partial<NewAnimalFormData>): Promise<Animal> {
     await new Promise(resolve => setTimeout(resolve, 600));
-    
+
     const animalIndex = mockAnimals.findIndex(a => a.id === animalId);
     if (animalIndex === -1) {
       throw new Error("Animal not found");
     }
-    
+
     mockAnimals[animalIndex] = {
       ...mockAnimals[animalIndex],
       ...animalData,
       updated_at: new Date().toISOString()
     };
-    
+
     return mockAnimals[animalIndex];
   }
 
@@ -190,13 +190,13 @@ export class FakeApiClient {
     text?: string;
   }): Promise<SoapGenerationResponse> {
     await new Promise(resolve => setTimeout(resolve, 2500));
-    
+
     const inputSources = [];
     if (data.audio) inputSources.push("音声");
     if (data.images?.length) inputSources.push(`画像${data.images.length}枚`);
     if (data.transcript) inputSources.push("音声認識テキスト");
     if (data.text) inputSources.push("手入力テキスト");
-    
+
     return {
       subjective: `複合入力（${inputSources.join("、")}）から得られた主観的情報。`,
       objective: "複数のデータソースを統合した客観的所見。画像解析と音声解析の結果を含む。",
@@ -216,7 +216,7 @@ export class FakeApiClient {
     medication_history?: string[];
   }): Promise<RecordCreationResponse> {
     await new Promise(resolve => setTimeout(resolve, 1200));
-    
+
     const newRecord = {
       id: `rec_${Date.now()}`,
       animal_id: recordData.animalId,
@@ -228,7 +228,7 @@ export class FakeApiClient {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    
+
     return {
       record: newRecord,
       message: "診療記録が正常に作成されました"
@@ -238,14 +238,14 @@ export class FakeApiClient {
   // 診療記録更新
   async updateRecord(recordId: string, recordData: Partial<NewRecordFormData>): Promise<Record> {
     await new Promise(resolve => setTimeout(resolve, 800));
-    
+
     return {
       id: recordId,
       animal_id: "mock_animal_id",
       date: new Date().toISOString(),
       soap: recordData.soap || {
         subjective: "更新されたS",
-        objective: "更新されたO", 
+        objective: "更新されたO",
         assessment: "更新されたA",
         plan: "更新されたP"
       },
@@ -330,6 +330,15 @@ export class FakeApiClient {
       totalRecords: 5,
       timeRange: timeRange || "all",
       mock: true
+    };
+  }
+  // 翻訳 API
+  async translateText(text: string, target_lang: string = 'en'): Promise<{ translated: string; target_lang: string; service: string | null; }> {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    return {
+      translated: `[Mock Translation to ${target_lang}]: ${text}`,
+      target_lang: target_lang,
+      service: "mock"
     };
   }
 }

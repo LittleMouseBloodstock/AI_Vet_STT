@@ -233,7 +233,7 @@ async def transcribe_audio(audio: UploadFile = File(...), lang: str = Form(None)
         "service": "google_speech_to_text",
     }
 
-@app.post("/api/generateSoapFromText")
+@app.post("/api/generateSoap")
 async def generate_soap_endpoint(
     audio: UploadFile = File(None), 
     transcribed_text: str = Form(None), 
@@ -260,7 +260,7 @@ async def generate_soap_endpoint(
     if not input_text:
         raise HTTPException(status_code=400, detail="テキストが指定されていません")
         
-    soap_notes = google_ai_service.generate_soap_from_text(input_text)
+    soap_notes = google_ai_service.generate_soap_from_text(input_text, lang=lang or "ja")
     
     # 生成後に出力言語を揃えたい場合は、target_lang を指定して翻訳
     if target_lang:

@@ -69,18 +69,19 @@ class GoogleAIService:
 
         return ""
 
-    def generate_soap_from_text(self, transcribed_text: str) -> SoapNotes:
+    def generate_soap_from_text(self, transcribed_text: str, lang: str = "ja") -> SoapNotes:
         """
         テキストからSOAPノートを生成します。
         
         Args:
             transcribed_text: 文字起こしされた診療情報テキスト。
+            lang: プロンプトの言語 ("ja" or "en")
         
         Returns:
             Pydanticモデル `SoapNotes` のインスタンス。
         """
         # ★★★ デバッグログ追加 ★★★
-        print(f"=== SOAP生成開始 ===")
+        print(f"=== SOAP生成開始 (lang={lang}) ===")
         print(f"入力テキスト: '{transcribed_text}'")
         print(f"入力テキスト長: {len(transcribed_text)} 文字")
         
@@ -89,7 +90,30 @@ class GoogleAIService:
             print("❌ 入力テキストが空です")
             return SoapNotes(s="入力テキストが空です", o="", a="", p="")
         
-        prompt = f"""
+        if lang == "en":
+            prompt = f"""
+            You are an expert large animal veterinarian.
+            Based on the following patient information, please create a medical note in SOAP format.
+
+            S (Subjective): Owner's complaints and history.
+            O (Objective): Visual inspection, palpation, auscultation, test results, etc.
+            A (Assessment): Diagnosis or issues derived from S and O.
+            P (Plan): Treatment plan, prescription, instructions for next visit.
+
+            --- Clinical Info ---
+            {transcribed_text}
+            ---
+
+            The output must be a valid JSON object with the following keys ONLY:
+            {{
+                "s": "Subjective info here",
+                "o": "Objective info here", 
+                "a": "Assessment here",
+                "p": "Plan here"
+            }}
+            """
+        else:
+            prompt = f"""
             あなたは優秀な大動物の獣医師です。
             以下の患者に関する情報をもとに、SOAP形式の診療ノートを作成してください。
 

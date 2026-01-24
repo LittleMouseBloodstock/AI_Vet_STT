@@ -199,13 +199,14 @@ class ApiClient {
   }
 
   // SOAP生成（テキストから）
-  async generateSoapFromText(text: string): Promise<SoapGenerationResponse> {
+  async generateSoapFromText(text: string, lang?: string): Promise<SoapGenerationResponse> {
     const formData = new FormData();
     formData.append("text", text);
     // Backendのバージョン差異吸収のため、両方のキーで送る
     formData.append("transcribed_text", text);
+    if (lang) formData.append("lang", lang);
 
-    return this.request<SoapGenerationResponse>("/api/generateSoapFromText", {
+    return this.request<SoapGenerationResponse>("/api/generateSoap", {
       method: "POST",
       body: formData,
     });
@@ -217,6 +218,7 @@ class ApiClient {
     images?: File[];
     transcript?: string;
     text?: string;
+    lang?: string;
   }): Promise<SoapGenerationResponse> {
     const formData = new FormData();
 
@@ -236,6 +238,10 @@ class ApiClient {
       data.images.forEach((file) => {
         formData.append("images", file);
       });
+    }
+
+    if (data.lang) {
+      formData.append("lang", data.lang);
     }
 
     return this.request<SoapGenerationResponse>("/api/generateSoap", {
