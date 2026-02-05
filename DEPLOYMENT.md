@@ -7,7 +7,7 @@ Overview
 
 Prerequisites
 - GitHub repository connected to both Vercel and Render
-- Optional: Google credentials if you need Sheets/AI features (can skip for demo)
+- Optional: Google credentials if you need Calendar/AI features (can skip for demo)
 
 Backend (Render)
 1) Import repo as Blueprint
@@ -18,7 +18,8 @@ Backend (Render)
    - (preset) `ENABLE_DEBUG_ENDPOINTS=0`
    - (preset) `CORS_ALLOW_ORIGIN_REGEX=^https://.*\.vercel\.app$`
    - (secret, optional) `GOOGLE_SERVICE_ACCOUNT_B64` = Base64 of service_account.json
-   - (secret, optional) `SPREADSHEET_ID` = Google Sheet ID
+   - (secret) `SUPABASE_URL` = Supabase project URL
+   - (secret) `SUPABASE_SERVICE_ROLE_KEY` = Supabase service role key
    - (secret, optional) `GOOGLE_GEMINI_API_KEY` = Gemini API key
 3) Deploy on Free plan
 4) Verify health

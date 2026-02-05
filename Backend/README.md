@@ -15,10 +15,11 @@ FastAPI + Google Cloud APIs (Speech-to-Text / Gemini)。
        （自動で `GOOGLE_APPLICATION_CREDENTIALS` を設定）
    - Gemini API キー（いずれかの名前）
      - `GOOGLE_GEMINI_API_KEY` または `GEMINI_API_KEY`
-   - Google Sheets 連携
-     - `SPREADSHEET_ID`: 対象スプレッドシートID
+   - Supabase（DB）
+     - `SUPABASE_URL`
+     - `SUPABASE_SERVICE_ROLE_KEY`（推奨）または `SUPABASE_ANON_KEY`
    - 任意の開発用オプション
-     - `LOCAL_DEV=1` で Sheets の読み書きをスキップ（インメモリDBのみ）
+     - `LOCAL_DEV=1` でインメモリDBのみ（Supabase未使用）
 3. サーバ起動
    ```bash
    uvicorn main:app --reload --port 8000
@@ -40,6 +41,10 @@ FastAPI + Google Cloud APIs (Speech-to-Text / Gemini)。
   - `service_account.json` が存在すれば `GOOGLE_APPLICATION_CREDENTIALS` を自動設定
   - Gemini API キーは `GOOGLE_GEMINI_API_KEY` / `GEMINI_API_KEY` のいずれかを参照
   - デバッグAPI（`/api/debug/*`）は `ENABLE_DEBUG_ENDPOINTS=1` の時のみ有効（既定=1）
+
+## Supabase スキーマ
+
+`supabase_schema.sql` を Supabase の SQL editor で実行してください。
 
 > 既存の API やエンドポイントの挙動は変更していません。
 

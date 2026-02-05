@@ -1,6 +1,5 @@
 ﻿from dotenv import load_dotenv
 import os
-import base64
 import uuid
 from typing import List, Optional
 
@@ -15,30 +14,17 @@ from storage import save_file
 from audio_service import GoogleAudioService
 from ai_service import GoogleAIService
 from config import init_env, get_gemini_api_key
-import json as _json
 
 # .env を読み込み + 基本環境を初期化
 load_dotenv()
 init_env()
 
 # Determine dev/runtime flags from environment
-_LOCAL_DEV = os.getenv("LOCAL_DEV", "0") == "1"
-_SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
-
 # Google サービスは起動時に初期化
 google_audio_service: Optional[GoogleAudioService] = None
 google_ai_service: Optional[GoogleAIService] = None
 
-# DB 初期ロード（LOCAL_DEV もしくは Sheets 未設定ならスキップ）
-if not _LOCAL_DEV and _SPREADSHEET_ID:
-    try:
-        DB.load_from_sheets()
-    except Exception:
-        print("Google Sheets からの初期データ読み込みに失敗しました")
-        import traceback
-        traceback.print_exc()
-else:
-    print("[startup] Skipping Google Sheets load (LOCAL_DEV=1 or SPREADSHEET_ID not set)")
+print("[startup] DB backend: Supabase" if os.getenv("SUPABASE_URL") else "[startup] DB backend: InMemory")
 
 app = FastAPI(title="AI Vet Chart Backend")
 
@@ -75,59 +61,17 @@ async def health():
 DEBUG_ENDPOINTS = os.getenv("ENABLE_DEBUG_ENDPOINTS", "1") == "1"
 
 if DEBUG_ENDPOINTS:
-    @app.get("/api/debug/google-apis")
-    async def debug_google_apis():
-        """Google APIs 設定状況の確認用。認証やクォータ設定のトラブルシュートに使用。"""
-        spreadsheet_id = os.getenv("SPREADSHEET_ID")
-        animals_tab = os.getenv("SHEETS_TAB_ANIMALS", "animals")
-        records_tab = os.getenv("SHEETS_TAB_RECORDS", "records")
-        using_b64 = bool(os.getenv("GOOGLE_SERVICE_ACCOUNT_B64"))
-        gac = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-        service_account_file_exists = os.path.exists("service_account.json")
-        client_email = None
-        try:
-            b64 = os.getenv("GOOGLE_SERVICE_ACCOUNT_B64")
-            if b64:
-                data = base64.b64decode(b64)
-                info = _json.loads(data.decode("utf-8"))
-                client_email = info.get("client_email")
-        except Exception:
-            client_email = None
+    @app.get("/api/debug/db")
+    async def debug_db():
         return {
-            "spreadsheet_id_present": bool(spreadsheet_id),
-            "spreadsheet_id_preview": (spreadsheet_id[:6] + "..." + spreadsheet_id[-4:]) if spreadsheet_id else None,
-            "tabs": {"animals": animals_tab, "records": records_tab},
+            "supabase_url_present": bool(os.getenv("SUPABASE_URL")),
+            "supabase_key_present": bool(
+                os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+                or os.getenv("SUPABASE_KEY")
+                or os.getenv("SUPABASE_ANON_KEY")
+            ),
             "gemini_key_present": bool(get_gemini_api_key()),
-            "gcp": {
-                "using_b64": using_b64,
-                "gac_env_set": bool(gac),
-                "service_account_json_exists": service_account_file_exists,
-                "service_account_client_email": client_email,
-            },
         }
-
-if DEBUG_ENDPOINTS:
-    @app.get("/api/debug/reload-sheets")
-    async def reload_sheets_get():
-        """Google Sheets からデータを再読込（GET）。"""
-        try:
-            DB.load_from_sheets()
-            animal_ids = list(DB.animals.keys())
-            preview = animal_ids[:5]
-            return {"ok": True, "animals_count": len(animal_ids), "animals_preview": preview}
-        except Exception as e:
-            return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
-
-    @app.post("/api/debug/reload-sheets")
-    async def reload_sheets_post():
-        """Google Sheets からデータを再読込（POST）。"""
-        try:
-            DB.load_from_sheets()
-            animal_ids = list(DB.animals.keys())
-            preview = animal_ids[:5]
-            return {"ok": True, "animals_count": len(animal_ids), "animals_preview": preview}
-        except Exception as e:
-            return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 @app.on_event("startup")
 async def on_startup():
     global google_audio_service, google_ai_service
@@ -158,14 +102,13 @@ async def list_animals(
     breed: str = None,
     sex: str = None,
 ):
-    animals = list(DB.animals.values()) if not query else DB.search_animals(query)
-    def match(a: Animal) -> bool:
-        if microchip_number and a.microchip_number != microchip_number: return False
-        if farm_id and getattr(a, "farm_id", None) and farm_id not in a.farm_id: return False
-        if breed and getattr(a, "breed", None) and breed != a.breed: return False
-        if sex and getattr(a, "sex", None) and sex != a.sex: return False
-        return True
-    return [a for a in animals if match(a)]
+    return DB.list_animals(
+        query=query,
+        microchip_number=microchip_number,
+        farm_id=farm_id,
+        breed=breed,
+        sex=sex,
+    )
 
 @app.get("/api/animals/{animal_id}", response_model=AnimalDetailData)
 async def get_animal(animal_id: str):
@@ -299,7 +242,7 @@ async def api_translate(text: str = Form(...), target_lang: str = Form("en")):
 @app.get("/api/appointments")
 async def get_appointments(date: str = None):
     items = []
-    for animal in DB.animals.values():
+    for animal in DB.list_animals():
         records = DB.get_records_for_animal(animal.id)
         if not records:
             continue

@@ -57,7 +57,7 @@ gcloud run deploy ai-vet-backend \
 # 例: 必要な変数を設定 (実際の値に書き換えて実行してください)
 gcloud run services update ai-vet-backend \
   --region asia-northeast1 \
-  --set-env-vars "GOOGLE_GEMINI_API_KEY=あなたのAPIキー,SPREADSHEET_ID=あなたのシートID"
+  --set-env-vars "GOOGLE_GEMINI_API_KEY=あなたのAPIキー,GEMINI_API_KEY=あなたのAPIキー,SUPABASE_URL=あなたのURL,SUPABASE_SERVICE_ROLE_KEY=あなたのキー"
 ```
 ※ `service_account.json` や `.env` ファイルの内容を反映させる方法はいくつかありますが、まずは最小構成で動かすならGUI画面（Cloud Consoleの「Cloud Run」→「ai-vet-backend」→「編集とデプロイ」→「変数」タブ）で設定するのが一番わかりやすいです。
 

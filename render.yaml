@@ -16,7 +16,9 @@ services:
       # Secrets to be set in Render Dashboard after import
       - key: GOOGLE_SERVICE_ACCOUNT_B64
         sync: false
-      - key: SPREADSHEET_ID
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: GOOGLE_GEMINI_API_KEY
         sync: false
